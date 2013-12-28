@@ -237,14 +237,18 @@ def getTotalVolume(solution):
         volume += solution[id][0] * solution[id][1] * solution[id][2]
     return volume
     
-    
+import sys    
 if __name__ == "__main__":
     
     start = time.clock()
     
-    path = 'xxxx'
+    path = '.'
     presentsFilename = os.path.join(path, 'presents.csv')
-    submissionFilename = os.path.join(path, 'SubmissionFile.csv')
+    if len(sys.argv) <= 1:
+       print "One argument is required (name of submission csv)"
+       exit()
+       
+    submissionFilename = os.path.join(path, sys.argv[1])
 
     # read file contents into solution dictionary and submission dictionary
     solution = readPresentsFile(presentsFilename)
@@ -269,5 +273,7 @@ if __name__ == "__main__":
     
     metric = 2 * max(orderedPresents.keys()) + orderTerm
     print 'Metric = ' + str(metric)
+    print 'Order term = ' + str(orderTerm)
+    print 'Height term = ' + str(max(orderedPresents.keys()))
 
     print '\nTotal clock time = ' + str(time.clock() - start)

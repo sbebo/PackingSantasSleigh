@@ -106,7 +106,7 @@ class Cursor:
 
 if __name__ == "__main__":
     
-    path = 'xxxx'
+    path = '.'
     reverseOrderedPresentsFilename = os.path.join(path, 'presents_revorder.csv')
     submissionFilename = os.path.join(path, 'sampleSubmission_bottomPacking.csv')
     
