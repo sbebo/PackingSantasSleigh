@@ -13,67 +13,6 @@ import csv
 SLEIGH_LENGTH = 1000
 xpos, ypos, zpos, dx, dy, dz = [],[],[],[],[],[]
 
-def max_rect_packing(cursor, present):
-    """ Given the sleigh and present, packs the present in the sleigh using simple
-        filling procedure.
-        - Start at (1000,1000,1). Pack along y=1000, z=1 until full
-        - Move y = min_occupied_y. Pack until full
-        - When y is full, move to z = max_occupied_z.
-    Arguments:
-        cursor: Object to keep track of current position in the sleigh and max 
-            values reached so far
-        present: row from the present file: id, length_x, length_y, length_z
-    Returns:
-        [x1, x2, y1, y2, z1, z2]
-    """
-
-    xx = int(present[1])
-    yy = int(present[2])
-    zz = int(present[3])
-    a = [xx,yy,zz]
-    a.sort()
-    xx = a[0]
-    yy = a[1]
-    zz = a[2]
-
-    # if present exceeds x only, update cursor to (1000, miny-1, iz)
-    if (cursor.ix - xx + 1) < 1:
-        cursor.ix = SLEIGH_LENGTH 
-        cursor.minx = SLEIGH_LENGTH 
-        cursor.iy = cursor.miny - 1
-    
-    # if present exceeds in y only, update cursor to (1000,1000, maxz+1)
-    if (cursor.iy - yy + 1) < 1:
-        if cursor.iz == 1:
-           print "Exceeding first layer"
-           print cursor.ix,cursor.iy,cursor.iz 
-           print xx,yy,zz
-        cursor.ix = SLEIGH_LENGTH 
-        cursor.minx = SLEIGH_LENGTH 
-        cursor.iy = SLEIGH_LENGTH 
-        cursor.miny = SLEIGH_LENGTH 
-        cursor.iz = cursor.maxz + 1
-        
-    # if present can be placed in both x and y directions, place present
-    if (cursor.ix - xx + 1) >= 1 \
-        and (cursor.iy - yy + 1) >= 1:
-            x1 = cursor.ix
-            y1 = cursor.iy
-            z1 = cursor.iz
-            x2 = x1 - xx + 1
-            y2 = y1 - yy + 1
-            z2 = z1 + zz - 1
-            cursor.ix = x2 - 1
-            
-            if x2 < cursor.minx:
-                cursor.minx = x2
-            if y2 < cursor.miny:
-                cursor.miny = y2
-            if z2 > cursor.maxz:
-                cursor.maxz = z2
-
-    return [x1, x2, y1, y2, z1, z2]
-
 def simple_packing(cursor, present):
     """ Given the sleigh and present, packs the present in the sleigh using simple
         filling procedure.
@@ -107,6 +46,7 @@ def simple_packing(cursor, present):
     if (cursor.iy - yy + 1) < 1:
         if cursor.iz == 1:
            print "Exceeding first layer"
+           print present[0]
            print cursor.ix,cursor.iy,cursor.iz 
            print xx,yy,zz
         cursor.ix = SLEIGH_LENGTH 
