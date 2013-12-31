@@ -14,9 +14,9 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 SLEIGH_LENGTH = 1000
-MAX_LAYERS = 2
+MAX_LAYERS = 1000
 #MAX_LAYERS = 999999 
-PLOT = True
+PLOT = False
 WRITE = False
 
 # Plotting
@@ -42,6 +42,190 @@ class Layer:
 
    """ Pack the presents """
    def pack(self):
+      self.guillotine_pack()
+      return
+
+   def max_rect_pack(self):
+      rect = Rectangle() #entire shelf
+      self.free_rectangles = [rect]
+      self.used_rectangles = []
+
+      sorties = int(0.7*len(self.presents))
+      tmp = self.presents[:sorties]
+      tmp.sort(key= lambda p : p.area, reverse=True)
+      tmp.extend(self.presents[sorties:])
+      self.presents = []
+      leftovers = []
+      full = False
+      for present in tmp:
+         if full == True:
+            leftovers.append(present)
+            continue
+         
+         coordinates = self.pack_present(present) 
+         
+         if coordinates is None:
+            full = True
+            leftovers.append(present)
+            continue
+         else:
+            [x1, x2, y1, y2, z1, z2] = coordinates
+            present.xpos = min(x1,x2)
+            present.ypos = min(y1,y2)
+            present.zpos = min(z1,z2)
+            self.presents.append(present)
+            self.z_max = max(self.z_max, present.zpos + present.z_depth - 1)
+#      print [p.id for p in leftovers]
+      self.presents.sort(key= lambda p : p.id)
+      leftovers.sort(key= lambda p : p.id)
+      return leftovers
+
+
+   def pack_present(self, present):
+      #find the new rectangle where to store the present
+      newRect = self.find_position()
+      if newRect = None:
+         return None
+     
+      #detect which rectangles are affected by splitting the new rectangle
+      toDelete= []
+      for i,r in enumerate(self.free_rectangles):
+         if self.split_rect(r, newRect):
+            toDelete.append(i)
+      for i in toDelete:
+         del self.free_rectangles[i]
+      
+      # prune the list 
+      self.prune_free()
+
+      used_rectangles.append(newRect)
+      
+      return newRect
+
+
+   def find_position(self, present):
+      bestRect = Rectangle()
+      bestShortSideFit = SLEIGH_LENGTH 
+      bestLongSideFit = SLEIGH_LENGTH 
+      for i,r in enumerate(self.free_rectangles):
+
+         ####################
+         if r.width >= present.width and r.height >= present.height:
+            leftoverHoriz = r.width - present.width
+            leftoverVert = r.height - present.height
+            shortSideFit = min(leftoverHoriz, leftoverVert)
+            longSideFit = max(leftoverHoriz, leftoverVert)
+
+            if shortSideFit < bestShortSideFit or (shortSideFit == bestShortSideFit and longSideFit < bestLongSideFit):
+               bestRect.xpos = r.xpos
+               bestRect.ypos = r.ypos
+               bestRect.width = present.width
+               bestRect.height = present.height
+               bestShortSideFit = shortSideFit
+               bestLongSideFit = longSideFit
+
+         ####################
+         if r.width >= present.height and r.height >= present.height:
+            present.rotate()
+            leftoverHoriz = r.width - present.width
+            leftoverVert = r.height - present.height
+            shortSideFit = min(leftoverHoriz, leftoverVert)
+            longSideFit = max(leftoverHoriz, leftoverVert)
+
+            if shortSideFit < bestShortSideFit or (shortSideFit == bestShortSideFit and longSideFit < bestLongSideFit):
+               bestRect.xpos = r.xpos
+               bestRect.ypos = r.ypos
+               bestRect.width = present.width
+               bestRect.height = present.height
+               bestShortSideFit = shortSideFit
+               bestLongSideFit = longSideFit
+            else:
+               present.rotate()
+      
+      if bestShortSideFit == SLEIGH_LENGTH:
+         return None
+      return bestRect
+
+   def split_rect(self, freeRect, usedRect):
+      #TODO: check bounds!!!
+      if not freeRect.overlap(usedRect):
+         return False
+ 
+      if (usedRect.xpos <= freeRect.xpos + freeRect.width-1 and usedRect.xpos + usedRect.width-1 >= freeRect.xpos):
+        
+              # New node at the top side of the used node.
+              if (usedRect.ypos > freeRect.ypos and usedRect.ypos < freeRect.ypos + freeRect.height-1):
+                 #horrible
+                 newRect = Rectangle()
+                 newRect.xpos = freeRect.xpos
+                 newRect.ypos = freeRect.ypos
+                 newRect.width = freeRect.width
+                 newRect.height = freeRect.height
+                 
+                 newRect.height = usedRect.ypos - newRect.ypos
+                 self.free_rectangles.append(newRect)
+
+              # New node at the bottom side of the used node.
+              if (usedRect.ypos + usedRect.height < freeRect.ypos + freeRect.height):
+                 #horrible
+                 newRect = Rectangle()
+                 newRect.xpos = freeRect.xpos
+                 newRect.ypos = freeRect.ypos
+                 newRect.width = freeRect.width
+                 newRect.height = freeRect.height
+             
+                 newRect.ypos = usedRect.ypos + usedRect.height
+                 newRect.height = freeRect.ypos + freeRect.height - (usedRect.ypos + usedRect.height)
+                 self.free_rectangles.append(newRect)
+
+        if (usedRect.ypos < freeRect.ypos + freeRect.height and usedRect.ypos + usedRect.height > freeRect.ypos):
+        
+              # New node at the left side of the used node.
+              if (usedRect.xpos > freeRect.xpos and usedRect.xpos < freeRect.xpos + freeRect.width):
+                 #horrible
+                 newRect = Rectangle()
+                 newRect.xpos = freeRect.xpos
+                 newRect.ypos = freeRect.ypos
+                 newRect.width = freeRect.width
+                 newRect.height = freeRect.height
+             
+                 newRect.width = usedRect.xpos - newRect.xpos
+                 self.free_rectangles.append(newRect)
+
+              # New node at the right side of the used node.
+              if (usedRect.xpos + usedRect.width < freeRect.xpos + freeRect.width):
+                 #horrible
+                 newRect = Rectangle()
+                 newRect.xpos = freeRect.xpos
+                 newRect.ypos = freeRect.ypos
+                 newRect.width = freeRect.width
+                 newRect.height = freeRect.height
+            
+                 newRect.xpos = usedRect.xpos + usedRect.width
+                 newRect.width = freeRect.xpos + freeRect.width - (usedRect.xpos + usedRect.width)
+                 self.free_rectangles.append(newRect)
+
+        return True
+
+
+   def prune_free(self):
+      toDelete = set()
+      for i,r in enumerate(self.free_rectangles):
+         for j,r2 in enumerate(self.free_rectangles):
+            if j>i:
+               if r2.contains(r):
+                  toDelete.add(r)
+                  break
+               if r.contains(r2):
+                  toDelete.add(r2)
+      for i in toDelete:
+         del self.free_rectangles[i]
+
+      return
+
+
+   """ Guillotine packing """
+   def guillotine_pack(self):
 #      print len(self.presents)
       sorties = int(0.7*len(self.presents))
       tmp = self.presents[:sorties]
@@ -55,7 +239,7 @@ class Layer:
             leftovers.append(present)
             continue
          
-         coordinates = self.max_rect_packing(present) 
+         coordinates = self.guillotine_pack_present(present) 
          
          if coordinates is None:
             full = True
@@ -75,7 +259,7 @@ class Layer:
       return leftovers
 
    """ Try to pack a present in this layer """ #TODO better packing!
-   def max_rect_packing(self, present):
+   def guillotine_pack_present(self, present):
       leaf = self.tree.root.insert(present)
       #print tree
       if leaf is None:
@@ -102,10 +286,6 @@ class Layer:
 
    
    
-   """ Clear shelf and increase z_base """
-   def next_shelf(self):
-      return
-
    """ Copy presents and sort them decreasingly by tallest z-point they reach (if no compactor, the z_pos term is all the same (z_base), but otherwise it's not). """
    def sort_presents(self):
       self.sorted_presents = list(self.presents)
@@ -187,6 +367,26 @@ class Layer:
 class Tree:
    def __init__(self):
       self.root = Node()
+
+class Rectangle:
+   def __init__(self, w=SLEIGH_LENGTH, h=SLEIGH_LENGTH):
+      self.xpos = 1 
+      selx.ypos = 1
+      self.width = w 
+      self.height = h 
+ 
+   def overlap(self, rectangle):
+      # make sure that positions are good, not 0's!
+
+      if (self.xpos+self.width-1) < rectangle.xpos:
+         return False
+      if self.xpos > (rectangle.xpos+rectangle.width-1):
+         return False
+      if (self.ypos+self.height-1) < rectangle.ypos:
+         return False
+      if self.ypos > (rectangle.ypos+rectangle.height-1): 
+         return False
+      return True
 
 class Present:
    def __init__(self, row):
